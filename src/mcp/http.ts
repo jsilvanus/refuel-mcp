@@ -76,7 +76,7 @@ export async function mountMcpHttp(app: FastifyInstance, options: McpHttpOptions
 
     }
 
-    const server = createMcpServer({ connector: options.connector, publicUrl: options.publicUrl });
+    const server = createMcpServer({ connector: options.connector, publicUrl: options.publicUrl, authMode: options.authMode ?? 'oauth' });
     const transport = new StreamableHTTPServerTransport({});
     await server.connect(transport as unknown as Transport);
 
