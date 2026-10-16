@@ -1,4 +1,5 @@
 import type { IncomingMessage } from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
@@ -17,6 +18,9 @@ export interface McpHttpOptions {
    * tools, and tools that need OAuth return the `mcp/www_authenticate` hint (see src/mcp/server.ts).
    */
   requireAuth?: boolean;
+  authMode?: 'bearer' | 'oauth';
+  bearerToken?: string;
+  userId?: string;
 }
 
 export function wwwAuthenticate(publicUrl: string, error?: string): string {
@@ -40,9 +44,19 @@ export async function mountMcpHttp(app: FastifyInstance, options: McpHttpOptions
     const requireAuth = options.requireAuth ?? true;
     const challenge = (error?: string) =>
       reply.code(401).header('WWW-Authenticate', wwwAuthenticate(options.publicUrl, error)).send({ error: error ?? 'unauthorized' });
-    if (requireAuth && !header?.startsWith('Bearer ')) return challenge();
+    const authMode = options.authMode ?? 'oauth';
+    if (authMode === 'bearer') {
+      const supplied = header?.startsWith('Bearer ') ? header.slice(7) : '';
+      const expected = options.bearerToken ?? '';
+      const valid = supplied.length > 0 && expected.length > 0 &&
+        Buffer.byteLength(supplied) === Buffer.byteLength(expected) &&
+        timingSafeEqual(Buffer.from(supplied), Buffer.from(expected));
+      if (!valid) return reply.code(401).header('WWW-Authenticate', 'Bearer realm="refuel-mcp"').send({error:'unauthorized'});
+      authInfo = { token: supplied, clientId: 'configured-bearer', scopes: ['mcp'], extra: { userId: options.userId ?? '' } };
+    } else {
+      if (requireAuth && !header?.startsWith('Bearer ')) return challenge();
 
-    if (header?.startsWith('Bearer ')) {
+    if (authMode === 'oauth' && header?.startsWith('Bearer ')) {
       try {
         const token = header.slice('Bearer '.length);
         const payload = await verifyBearerToken(token, options.jwtSecret, options.publicUrl, options.resource);
@@ -58,6 +72,8 @@ export async function mountMcpHttp(app: FastifyInstance, options: McpHttpOptions
         // An invalid token is never treated as anonymous: the client must refresh or re-authorize.
         return challenge('invalid_token');
       }
+    }
+
     }
 
     const server = createMcpServer({ connector: options.connector, publicUrl: options.publicUrl });
