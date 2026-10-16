@@ -8,7 +8,7 @@ PostgreSQL-backed MCP server for conversational vehicle refuelling history. Reus
 - PostgreSQL storage for users, OAuth codes/refresh tokens, cars, refuelling records and audit history.
 - Resources: `fuel://cars`, `fuel://cars/default`, `fuel://cars/{carId}`, `fuel://cars/{carId}/months`, `fuel://cars/{carId}/months/{month}`, `fuel://summary/months/{month}`, `fuel://summary/year/{year}`.
 - Write tools: `save_car`, `save_refueling_record`.
-- One initial local account bootstrapped from environment; account/OIDC federation hardening is a later phase.
+- One application user is configured by default. External OIDC federation and multi-user identity mapping are deferred.
 
 ## Run
 
