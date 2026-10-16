@@ -5,12 +5,12 @@ import { z } from 'zod';
 import { FuelConnector,type ConnectorContext } from '../connector.js';
 type Extra=RequestHandlerExtra<ServerRequest,ServerNotification>;
 const securitySchemes=[{type:'oauth2' as const,scopes:['mcp']}];
-const secure=<T extends object>(x:T)=>({...x,securitySchemes});
 const ctx=(e:Extra):ConnectorContext=>({...(typeof e.authInfo?.extra?.userId==='string'?{userId:e.authInfo.extra.userId}:{}),...(e.authInfo?.token?{accessToken:e.authInfo.token}:{})});
 const out=(v:unknown):CallToolResult=>({content:[{type:'text',text:JSON.stringify(v,null,2)}]});
 const err=(e:unknown):CallToolResult=>({content:[{type:'text',text:e instanceof Error?e.message:String(e)}],isError:true});
 const safe=(fn:(a:any,e:Extra)=>Promise<unknown>)=>async(a:any,e:Extra)=>{try{return out(await fn(a,e));}catch(x){return err(x);}};
-export function createMcpServer(options:{connector:FuelConnector;publicUrl:string}){
+export function createMcpServer(options:{connector:FuelConnector;publicUrl:string;authMode?:'bearer'|'oauth'}){
+ const secure=<T extends object>(x:T)=>options.authMode==='oauth'?({...x,securitySchemes}):x;
  const s=new McpServer({name:'refuel-mcp',version:'0.1.0'}),c=options.connector;
  const resource=(name:string,template:any,description:string,fn:(uri:URL,v:any,e:Extra)=>Promise<unknown>)=>s.registerResource(name,template,{description,mimeType:'application/json'},async(uri:URL,v:Record<string,string|string[]>,e:Extra)=>({contents:[{uri:uri.href,mimeType:'application/json',text:JSON.stringify(await fn(uri,v,e),null,2)}]}));
 s.registerResource('cars','fuel://cars',{description:'Cars owned by the authenticated user.',mimeType:'application/json'},async(uri,e)=>({contents:[{uri:uri.href,mimeType:'application/json',text:JSON.stringify(await c.listCars(ctx(e)),null,2)}]}));
