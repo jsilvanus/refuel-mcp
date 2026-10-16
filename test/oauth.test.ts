@@ -5,7 +5,7 @@
 
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { hash } from '@node-rs/argon2';
 import { buildApp } from '../src/app.js';
@@ -13,18 +13,17 @@ import { PostgresStore } from '../src/storage/postgres.js';
 
 const CLIENT_ID = 'https://client.example/oauth/client.json';
 const REDIRECT_URI = 'https://client.example/callback';
-const EMAIL = 'test@example.com';
+const EMAIL = 'oauth-' + randomUUID() + '@example.com';
 const PASSWORD = 'correct-horse-battery';
 
 let app: FastifyInstance;
 let base: string;
 let store: PostgresStore;
-const USER_ID = 'oauth-test-user';
+const USER_ID = 'oauth-test-' + randomUUID();
 
 before(async () => {
   store = new PostgresStore();
   await store.migrate();
-  await store.pool.query('DELETE FROM users WHERE id=$1', [USER_ID]);
   await store.createUser({ id: USER_ID, name: 'Test User', email: EMAIL, passwordHash: await hash(PASSWORD, { algorithm: 2 }), createdAt: Date.now() });
   app = await buildApp({
     publicUrl: 'http://127.0.0.1',
