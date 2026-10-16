@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_USER: refuel, POSTGRES_PASSWORD: refuel, POSTGRES_DB: refuel}
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U refuel -d refuel"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://refuel:refuel@localhost:5432/refuel
+      MCP_DEFAULT_USER_EMAIL: test@example.com
+      MCP_DEFAULT_USER_PASSWORD: test-password
+      JWT_SECRET: dGVzdC1zZWNyZXQtdGhhdC1pcy1hdC1sZWFzdC0zMi1ieXRlcy1sb25n
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm install
+      - run: npm run build
+      - run: npm test
