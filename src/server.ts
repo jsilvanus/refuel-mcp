@@ -14,5 +14,5 @@ const store=new PostgresStore();await store.migrate();
 const id=process.env.MCP_DEFAULT_USER_ID??'default-user',email=process.env.MCP_DEFAULT_USER_EMAIL,password=process.env.MCP_DEFAULT_USER_PASSWORD,name=process.env.MCP_DEFAULT_USER_NAME??'Fuel Log User';
 if(mode==='oauth'&&(!email||!password))throw new Error('MCP_DEFAULT_USER_EMAIL and MCP_DEFAULT_USER_PASSWORD are required in OAuth mode');
 if(!await store.getUser(id))await store.createUser({id,name,...(email?{email}:{}),...(password?{passwordHash:await hash(password,{algorithm:2})}:{}),createdAt:Date.now()});
-const app=await buildApp({publicUrl,jwtSecret:secret,store,users:store,db:store.pool,authMode:mode as 'bearer'|'oauth',bearerToken,defaultUserId:id});
+const app=await buildApp({publicUrl,jwtSecret:secret,store,users:store,db:store.pool,authMode:mode as 'bearer'|'oauth',...(bearerToken?{bearerToken}:{}),defaultUserId:id});
 const close=async()=>{await app.close();await store.close();};process.on('SIGINT',()=>void close().then(()=>process.exit(0)));process.on('SIGTERM',()=>void close().then(()=>process.exit(0)));await app.listen({host:process.env.HOST??'0.0.0.0',port});
