@@ -100,6 +100,10 @@ For conversational edits or deletions, identify the intended record unambiguousl
 ## Multi-user security
 
 - Derive the current user from authenticated server-side context. Never trust a model-supplied `user_id` as the authority for data access.
+- Support both authentication modes: (1) **single-user bearer-token mode**, where a securely configured bearer credential maps all requests to one configured application user; and (2) **multi-user OAuth/OIDC mode**, where users authenticate through an external OpenID Connect identity provider and each authenticated identity maps to its own application user.
+- In single-user bearer mode, treat the configured token as a secret: do not expose it in logs, resource output, errors, or client-visible metadata. A client-supplied user ID must not change the identity associated with this token.
+- In multi-user mode, validate access tokens for issuer, audience/resource, expiry and signature (or use the provider's supported token-validation mechanism); derive identity from validated claims and map it to an internal user. Do not treat an unvalidated ID token as an API access token.
+- Keep the modes explicit in configuration. Single-user bearer mode must not become multi-user by accepting arbitrary user identifiers; multi-user mode must not silently fall back to a shared/default user when authentication fails. Reject missing or invalid credentials.
 - Every car and refuelling read/write must enforce ownership on the server.
 - Knowing or guessing another user's car or record ID must not grant access.
 - A user's default car must belong to that user and must not be archived.
@@ -125,12 +129,13 @@ Accurate distance-based fuel consumption (such as L/100 km) requires suitable od
 - A lightweight TypeScript MCP server is a suitable implementation direction.
 - Docker deployment is expected.
 - ChatGPT/MCP is the initial user interface; a separate web UI is not required for the first release.
-- Keep transport and authentication implementation choices open until explicitly decided.
+- Support two deployment/authentication profiles: a simple single-user deployment using a configured bearer token, and a multi-user deployment using OAuth 2.0/OIDC login with an external identity provider. In the multi-user profile, the MCP server is an OAuth resource server, not the OIDC identity provider. Keep the profiles clearly documented and configurable.
 
 ## Decisions not yet specified
 
 - MCP transport (for example, Streamable HTTP, STDIO or both).
-- Authentication provider and identity mapping.
+- Exact bearer-token configuration and secret provisioning for single-user mode.
+- OIDC provider configuration, OAuth flow(s), identity claim mapping, and account provisioning/linking policy for multi-user mode.
 - Exact resource URI scheme and response schemas.
 - Whether and how to retain a full before/after audit log for edits, in addition to soft deletion.
 - Exact decimal precision and tolerance for comparing litres × unit price with total paid.
