@@ -27,7 +27,7 @@ describe('Refuel MCP over Streamable HTTP',()=>{
  it('requires the configured bearer token',async()=>{
   const r=await rpc('tools/list',{},false);
   assert.equal(r.status,401);
-  assert.match(r.headers.get('www-authenticate')??'','Bearer');
+  assert.match(r.headers.get('www-authenticate')??'',/Bearer/);
  });
  it('creates a car, records refuelling, marks a falling odometer untrusted, and reads summaries',async()=>{
   const init=await rpc('initialize',{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'test',version:'1'}});
