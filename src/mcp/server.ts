@@ -13,8 +13,8 @@ const safe=(fn:(a:any,e:Extra)=>Promise<unknown>)=>async(a:any,e:Extra)=>{try{re
 export function createMcpServer(options:{connector:FuelConnector;publicUrl:string}){
  const s=new McpServer({name:'refuel-mcp',version:'0.1.0'}),c=options.connector;
  const resource=(name:string,template:any,description:string,fn:(uri:URL,v:any,e:Extra)=>Promise<unknown>)=>s.registerResource(name,template,{description,mimeType:'application/json'},async(uri,v,e)=>({contents:[{uri:uri.href,mimeType:'application/json',text:JSON.stringify(await fn(uri,v,e),null,2)}]}));
- resource('cars','fuel://cars','Cars owned by the authenticated user.',async(_u,_v,e)=>c.listCars(ctx(e)));
- resource('default-car','fuel://cars/default','The default car, or null if no default is set.',async(_u,_v,e)=>c.defaultCar(ctx(e)));
+ resource('cars',new ResourceTemplate('fuel://cars',{list:undefined}),'Cars owned by the authenticated user.',async(_u,_v,e)=>c.listCars(ctx(e)));
+ resource('default-car',new ResourceTemplate('fuel://cars/default',{list:undefined}),'The default car, or null if no default is set.',async(_u,_v,e)=>c.defaultCar(ctx(e)));
  resource('car',new ResourceTemplate('fuel://cars/{carId}',{list:undefined}),'One car belonging to the authenticated user.',async(_u,v,e)=>c.car(ctx(e),String(v.carId)));
  resource('car-months',new ResourceTemplate('fuel://cars/{carId}/months',{list:undefined}),'Months with refuelling history for a car.',async(_u,v,e)=>c.months(ctx(e),String(v.carId)));
  resource('car-month',new ResourceTemplate('fuel://cars/{carId}/months/{month}',{list:undefined}),'Refuelling history and summary for a car in YYYY-MM.',async(_u,v,e)=>c.carMonth(ctx(e),String(v.carId),String(v.month)));
