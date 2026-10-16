@@ -33,7 +33,7 @@ Each user may own multiple cars. A car's default and archive state are managed t
 - Litres purchased.
 - Total amount paid.
 - Price per litre.
-- Optional odometer reading.
+- Optional odometer reading, with an explicit trust status (trusted/untrusted) and validation metadata where needed.
 - Optional station and notes.
 - Creation and last-modification timestamps.
 - Deletion state/timestamp if soft deletion is implemented.
@@ -115,7 +115,9 @@ Support purchase statistics from refuelling data alone:
 - Monthly and annual breakdowns and price trends.
 - Per-car and all-cars summaries.
 
-Odometer readings are optional in the initial schema. Accurate distance-based fuel consumption (such as L/100 km) requires suitable odometer readings across refuelling events and a clearly defined calculation method; do not claim to calculate reliable consumption from purchase quantities alone.
+Odometer readings are optional in the initial schema. When a submitted odometer reading is lower than the previous reading for the same car (ordered by refuelling event date/time), the server must notify the user and mark that reading as untrusted rather than silently accepting it as a normal trusted reading. Preserve the supplied value for correction/history; do not automatically rewrite it. The user may have entered a typo, the readings may be out of event order, or the odometer may have rolled over/reset. A lower reading must not automatically make later readings untrusted solely by cascade; reassess affected readings against their preceding event when records are added, edited, deleted, or reordered. Do not use untrusted readings to calculate distance-based consumption unless a defined method explicitly handles them. Purchase statistics remain available regardless of odometer trust.
+
+Accurate distance-based fuel consumption (such as L/100 km) requires suitable odometer readings across refuelling events and a clearly defined calculation method; do not claim to calculate reliable consumption from purchase quantities alone.
 
 ## Initial technical direction
 
@@ -132,4 +134,4 @@ Odometer readings are optional in the initial schema. Accurate distance-based fu
 - Exact resource URI scheme and response schemas.
 - Whether and how to retain a full before/after audit log for edits, in addition to soft deletion.
 - Exact decimal precision and tolerance for comparing litres × unit price with total paid.
-- Final statistics definitions and odometer-based consumption algorithm.
+- Final statistics definitions and odometer-based consumption algorithm, including any explicit workflow for confirming or correcting an untrusted odometer reading.
